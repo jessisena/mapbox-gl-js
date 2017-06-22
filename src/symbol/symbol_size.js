@@ -2,7 +2,7 @@
 
 const interpolate = require('../style-spec/util/interpolate');
 const util = require('../util/util');
-const interpolationFactor = require('../style-spec/function').interpolationFactor;
+const interpolationFactor = require('../style-spec/function/interpolation_factor');
 const assert = require('assert');
 
 module.exports = {
