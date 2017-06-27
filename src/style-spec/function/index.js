@@ -4,7 +4,7 @@ const assert = require('assert');
 const expressions = require('./expressions');
 const compileExpression = require('./compile');
 const convert = require('./convert');
-const {ColorType, StringType, NumberType, ValueType, array, vector} = require('./types');
+const {ColorType, StringType, NumberType, ValueType, array} = require('./types');
 const serialize = require('./type_check').serialize;
 
 function createFunction(parameters, propertySpec) {
@@ -82,10 +82,7 @@ function getExpectedType(spec) {
     };
 
     if (spec.type === 'array') {
-        if (typeof spec.length === 'number')
-            return array(types[spec.value], spec.length);
-        else
-            return vector(types[spec.value] || ValueType);
+        return array(types[spec.value] || ValueType, spec.length);
     }
 
     return types[spec.type];
