@@ -7,6 +7,8 @@ const Glyphs = require('../util/glyphs');
 const GlyphAtlas = require('../symbol/glyph_atlas');
 const Protobuf = require('pbf');
 const TinySDF = require('@mapbox/tiny-sdf');
+const isChar = require('../util/is_char_in_unicode_block');
+/* eslint-disable new-cap */
 
 // A simplified representation of the glyph containing only the properties needed for shaping.
 class SimpleGlyph {
@@ -59,7 +61,9 @@ class GlyphSource {
 
         const getGlyph = (glyphID) => {
             const range = Math.floor(glyphID / 256);
-            if (this.cjkGlyphFont && glyphID >= 0x4E00 && glyphID <= 0x9FFF) {
+            if (this.cjkGlyphFont &&
+                (isChar['CJK Unified Ideographs'](glyphID) ||
+                 isChar['Hangul Syllables'](glyphID))) {
                 if (!stack.cjkGlyphs[glyphID]) {
                     stack.cjkGlyphs[glyphID] = this.loadCJKGlyph(fontstack, glyphID);
                 }
