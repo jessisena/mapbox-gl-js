@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mapbox GL JS debug page</title>
+    <meta charset='utf-8'>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel='stylesheet' href='/dist/mapbox-gl.css' />
+    <style>
+        body { margin: 0; padding: 0; }
+        html, body, #originalMap, #newMap { height: 100%; }
+        #originalMap, #newMap { width: 49%; }
+
+        #originalLabel {
+            position: absolute;
+            background: #fff;
+            top:0;
+            left:0;
+            padding:10px;
+        }
+
+        #newLabel {
+            position: absolute;
+            background: #fff;
+            top:0;
+            right:0;
+            padding:10px;
+        }
+
+        #checkboxes {
+            position: absolute;
+            background: #fff;
+            bottom:0;
+            left:0;
+            padding:10px;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div id='originalMap' style="float: left"></div>
+<div id='newMap' style="float: right"></div>
+<label id='originalLabel'>Original Map</label>
+<label id='newLabel'>New Map</label>
+<div id='checkboxes'>
+    <label><input id='show-overdraw-checkbox' type='checkbox'> overdraw debug</label><br />
+</div>
+
+<script src='/dist/mapbox-gl-dev.js'></script>
+<script src='/debug/access_token_generated.js'></script>
+<script>
+
+function moveToMapPosition (master, clones) {
+  var center = master.getCenter();
+  var zoom = master.getZoom();
+  var bearing = master.getBearing();
+  var pitch = master.getPitch();
+
+  clones.forEach(function (clone) {
+    clone.jumpTo({
+      center: center,
+      zoom: zoom,
+      bearing: bearing,
+      pitch: pitch
+    });
+  });
+}
+
+// Sync movements of two maps.
+//
+// All interactions that result in movement end up firing
+// a "move" event. The trick here, though, is to
+// ensure that movements don't cycle from one map
+// to the other and back again, because such a cycle
+// - could cause an infinite loop
+// - prematurely halts prolonged movements like
+//   double-click zooming, box-zooming, and flying
+function syncMaps () {
+  var maps;
+  var argLen = arguments.length;
+  if (argLen === 1) {
+    maps = arguments[0];
+  } else {
+    maps = [];
+    for (var i = 0; i < argLen; i++) {
+      maps.push(arguments[i]);
+    }
+  }
+
+  // Create all the movement functions, because if they're created every time
+  // they wouldn't be the same and couldn't be removed.
+  var fns = [];
+  maps.forEach(function (map, index) {
+    fns[index] = sync.bind(null, map, maps.filter(function (o, i) { return i !== index; }));
+  });
+
+  function on () {
+    maps.forEach(function (map, index) {
+      map.on('move', fns[index]);
+    });
+  }
+
+  function off () {
+    maps.forEach(function (map, index) {
+      map.off('move', fns[index]);
+    });
+  }
+
+  // When one map moves, we turn off the movement listeners
+  // on all the maps, move it, then turn the listeners on again
+  function sync (master, clones) {
+    off();
+    moveToMapPosition(master, clones);
+    on();
+  }
+
+  on();
+}
+
+var originalMap = window.originalMap = new mapboxgl.Map({
+    container: 'originalMap',
+    zoom: 8.8,
+    center: [121.574, 31.1489],
+    style: '/debug/streets-zh-global-v1.json',
+    hash: true
+});
+
+var newMap = window.newMap = new mapboxgl.Map({
+    container: 'newMap',
+    zoom: 8.8,
+    center: [121.574, 31.1489],
+    style: '/debug/streets-zh-global-v1.json',
+    cjkGlyphFont: '"Noto Sans", "Noto Sans CJK SC", sans-serif',
+    hash: true
+});
+
+syncMaps(originalMap, newMap);
+
+document.getElementById('show-overdraw-checkbox').onclick = function() {
+    originalMap.showOverdrawInspector = !!this.checked;
+    newMap.showOverdrawInspector = !!this.checked;
+};
+
+
+</script>
+</body>
+</html>
