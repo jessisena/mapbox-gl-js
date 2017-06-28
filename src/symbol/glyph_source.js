@@ -6,7 +6,7 @@ const verticalizePunctuation = require('../util/verticalize_punctuation');
 const Glyphs = require('../util/glyphs');
 const GlyphAtlas = require('../symbol/glyph_atlas');
 const Protobuf = require('pbf');
-const TinySDF = require('tiny-sdf');
+const TinySDF = require('@mapbox/tiny-sdf');
 
 // A simplified representation of the glyph containing only the properties needed for shaping.
 class SimpleGlyph {
@@ -36,11 +36,7 @@ class GlyphSource {
         this.stacks = {};
         this.loading = {};
         this.cjkGlyphFont = cjkGlyphFont;
-
-        const fontSize = 24;
-        const buffer = 2;
-        const radius = fontSize / 3;
-        this.sdf = new TinySDF(fontSize, buffer, radius, .25, cjkGlyphFont);
+        this.tinySDFs = {};
     }
 
     getSimpleGlyphs(fontstack, glyphIDs, uid, callback) {
@@ -117,21 +113,30 @@ class GlyphSource {
     }
 
     loadCJKGlyph(fontstack, glyphID) {
-        // Rough implementation: do it synchronously, ignore fontstack and use default font
-        const imgData = this.sdf.draw(String.fromCharCode(glyphID));
-        const alphaData = new Uint8Array(imgData.data.length / 4);
-        for (let i = 0; i < imgData.data.length; i++) {
-            if (i % 4 === 0) {
-                alphaData[i / 4] = imgData.data[i];
+        let tinySDF = this.tinySDFs[fontstack];
+        if (!tinySDF) {
+            const fontSize = 24;
+            const buffer = 3;
+            const radius = fontSize / 3;
+            const cutoff = .25;
+            let fontWeight = '400';
+            if (/bold/i.test(fontstack)) {
+                fontWeight = '900';
+            } else if (/medium/i.test(fontstack)) {
+                fontWeight = '500';
+            } else if (/light/i.test(fontstack)) {
+                fontWeight = '200';
             }
+            tinySDF = this.tinySDFs[fontstack] = new TinySDF(fontSize, buffer, radius, cutoff, this.cjkGlyphFont, fontWeight);
         }
+
         return {
             id: glyphID,
-            bitmap: alphaData,
-            width: 22,
-            height: 22,
-            left: 1,
-            top: -6,
+            bitmap: tinySDF.draw(String.fromCharCode(glyphID)),
+            width: 24,
+            height: 24,
+            left: 0,
+            top: -8,
             advance: 24
         };
     }
