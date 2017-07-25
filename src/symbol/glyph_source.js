@@ -9,13 +9,13 @@ const isChar = require('../util/is_char_in_unicode_block');
 
 // A simplified representation of the glyph containing only the properties needed for shaping.
 class SimpleGlyph {
-    constructor(glyph, rect, buffer) {
-        const padding = 1;
-        this.advance = glyph.advance;
-        this.left = glyph.left - buffer - padding;
-        this.top = glyph.top + buffer + padding;
-        this.rect = rect;
-    }
+	constructor(glyph, rect, buffer) {
+		const padding = 1;
+		this.advance = glyph.advance;
+		this.left = glyph.left - buffer - padding;
+		this.top = glyph.top + buffer + padding;
+		this.rect = rect;
+	}
 }
 
 /**
@@ -26,153 +26,194 @@ class SimpleGlyph {
  * @private
  */
 class GlyphSource {
-    /**
-     * @param {string} url glyph template url
-     */
-    constructor(url, localIdeographFontFamily) {
-        this.url = url && normalizeURL(url);
-        this.atlases = {};
-        this.stacks = {};
-        this.loading = {};
-        this.localIdeographFontFamily = localIdeographFontFamily;
-        this.tinySDFs = {};
-    }
+	/**
+	 * @param {string} url glyph template url
+	 */
+	constructor(url, localIdeographFontFamily) {
+		this.url = url && normalizeURL(url);
+		this.atlases = {};
+		this.stacks = {};
+		this.loading = {};
+		this.localIdeographFontFamily = localIdeographFontFamily;
+		this.tinySDFs = {};
+	}
 
-    getSimpleGlyphs(fontstack, glyphIDs, uid, callback) {
-        if (this.stacks[fontstack] === undefined) {
-            this.stacks[fontstack] = { ranges: {}, cjkGlyphs: {} };
-        }
-        if (this.atlases[fontstack] === undefined) {
-            this.atlases[fontstack] = new GlyphAtlas();
-        }
+	getSimpleGlyphs(fontstack, glyphIDs, uid, callback) {
+		if (this.stacks[fontstack] === undefined) {
+			this.stacks[fontstack] = { ranges: {}, cjkGlyphs: {} };
+		}
+		if (this.atlases[fontstack] === undefined) {
+			this.atlases[fontstack] = new GlyphAtlas();
+		}
 
-        const glyphs = {};
-        const stack = this.stacks[fontstack];
-        const atlas = this.atlases[fontstack];
+		const glyphs = {};
+		const stack = this.stacks[fontstack];
+		const atlas = this.atlases[fontstack];
 
-        // the number of pixels the sdf bitmaps are padded by
-        const buffer = 3;
+		// the number of pixels the sdf bitmaps are padded by
+		const buffer = 3;
 
-        const missingRanges = {};
-        let remaining = 0;
+		const missingRanges = {};
+		let remaining = 0;
 
-        const getGlyph = (glyphID) => {
-            const range = Math.floor(glyphID / 256);
-            if (this.localIdeographFontFamily &&
-                // eslint-disable-next-line new-cap
-                (isChar['CJK Unified Ideographs'](glyphID) ||
-                // eslint-disable-next-line new-cap
-                 isChar['Hangul Syllables'](glyphID))) {
-                if (!stack.cjkGlyphs[glyphID]) {
-                    stack.cjkGlyphs[glyphID] = this.loadCJKGlyph(fontstack, glyphID);
-                }
+		const getGlyph = (glyphID) => {
+			const range = Math.floor(glyphID / 256);
+			if (this.localIdeographFontFamily &&
+				// eslint-disable-next-line new-cap
+				(isChar['CJK Unified Ideographs'](glyphID) ||
+				// eslint-disable-next-line new-cap
+				 isChar['Hangul Syllables'](glyphID))) {
+				if (!stack.cjkGlyphs[glyphID]) {
+					stack.cjkGlyphs[glyphID] = this.loadCJKGlyph(fontstack, glyphID);
+				}
 
-                const glyph = stack.cjkGlyphs[glyphID];
-                const rect  = atlas.addGlyph(uid, fontstack, glyph, buffer);
-                if (glyph) glyphs[glyphID] = new SimpleGlyph(glyph, rect, buffer);
-            } else {
-                if (stack.ranges[range]) {
-                    const glyph = stack.ranges[range].glyphs[glyphID];
-                    const rect  = atlas.addGlyph(uid, fontstack, glyph, buffer);
-                    if (glyph) glyphs[glyphID] = new SimpleGlyph(glyph, rect, buffer);
-                } else {
-                    if (missingRanges[range] === undefined) {
-                        missingRanges[range] = [];
-                        remaining++;
-                    }
-                    missingRanges[range].push(glyphID);
-                }
-            }
-            /* eslint-enable new-cap */
-        };
+				const glyph = stack.cjkGlyphs[glyphID];
+				const rect  = atlas.addGlyph(uid, fontstack, glyph, buffer);
+				if (glyph) glyphs[glyphID] = new SimpleGlyph(glyph, rect, buffer);
+			} else {
+				if (stack.ranges[range]) {
+					const glyph = stack.ranges[range].glyphs[glyphID];
+					const rect  = atlas.addGlyph(uid, fontstack, glyph, buffer);
+					if (glyph) glyphs[glyphID] = new SimpleGlyph(glyph, rect, buffer);
+				} else {
+					if (missingRanges[range] === undefined) {
+						missingRanges[range] = [];
+						remaining++;
+					}
+					missingRanges[range].push(glyphID);
+				}
+			}
+			/* eslint-enable new-cap */
+		};
 
-        for (let i = 0; i < glyphIDs.length; i++) {
-            getGlyph(glyphIDs[i]);
-        }
+		for (let i = 0; i < glyphIDs.length; i++) {
+			getGlyph(glyphIDs[i]);
+		}
 
-        if (!remaining) callback(undefined, glyphs, fontstack);
+		if (!remaining) callback(undefined, glyphs, fontstack);
 
-        const onRangeLoaded = (err, range, data) => {
-            if (!err) {
-                const stack = this.stacks[fontstack].ranges[range] = data.stacks[0];
-                for (let i = 0; i < missingRanges[range].length; i++) {
-                    const glyphID = missingRanges[range][i];
-                    const glyph = stack.glyphs[glyphID];
-                    const rect  = atlas.addGlyph(uid, fontstack, glyph, buffer);
-                    if (glyph) glyphs[glyphID] = new SimpleGlyph(glyph, rect, buffer);
-                }
-            }
-            remaining--;
-            if (!remaining) callback(undefined, glyphs, fontstack);
-        };
+		const onRangeLoaded = (err, range, data) => {
+			if (!err) {
+				const stack = this.stacks[fontstack].ranges[range] = data.stacks[0];
+				for (let i = 0; i < missingRanges[range].length; i++) {
+					const glyphID = missingRanges[range][i];
+					const glyph = stack.glyphs[glyphID];
+					const rect  = atlas.addGlyph(uid, fontstack, glyph, buffer);
+					if (glyph) glyphs[glyphID] = new SimpleGlyph(glyph, rect, buffer);
+				}
+			}
+			remaining--;
+			if (!remaining) callback(undefined, glyphs, fontstack);
+		};
 
-        for (const r in missingRanges) {
-            this.loadRange(fontstack, r, onRangeLoaded);
-        }
-    }
+		for (const r in missingRanges) {
+			this.loadRange(fontstack, r, onRangeLoaded);
+		}
+	}
 
-    createTinySDF(fontFamily, fontWeight) {
-        return  new TinySDF(24, 3, 8, .25, fontFamily, fontWeight);
-    }
+	createTinySDF(fontFamily, fontWeight) {
+		return  new TinySDF(24, 3, 8, .25, fontFamily, fontWeight);
+	}
 
-    loadCJKGlyph(fontstack, glyphID) {
-        let tinySDF = this.tinySDFs[fontstack];
-        if (!tinySDF) {
-            let fontWeight = '400';
-            if (/bold/i.test(fontstack)) {
-                fontWeight = '900';
-            } else if (/medium/i.test(fontstack)) {
-                fontWeight = '500';
-            } else if (/light/i.test(fontstack)) {
-                fontWeight = '200';
-            }
-            tinySDF = this.tinySDFs[fontstack] = this.createTinySDF(this.localIdeographFontFamily, fontWeight);
-        }
+	loadCJKGlyph(fontstack, glyphID) {
+		let tinySDF = this.tinySDFs[fontstack];
+		if (!tinySDF) {
+			let fontWeight = '400';
+			if (/bold/i.test(fontstack)) {
+				fontWeight = '900';
+			} else if (/medium/i.test(fontstack)) {
+				fontWeight = '500';
+			} else if (/light/i.test(fontstack)) {
+				fontWeight = '200';
+			}
+			tinySDF = this.tinySDFs[fontstack] = this.createTinySDF(this.localIdeographFontFamily, fontWeight);
+		}
 
-        return {
-            id: glyphID,
-            bitmap: tinySDF.draw(String.fromCharCode(glyphID)),
-            width: 24,
-            height: 24,
-            left: 0,
-            top: -8,
-            advance: 24
-        };
-    }
+		return {
+			id: glyphID,
+			bitmap: tinySDF.draw(String.fromCharCode(glyphID)),
+			width: 24,
+			height: 24,
+			left: 0,
+			top: -8,
+			advance: 24
+		};
+	}
 
-    loadPBF(url, callback) {
-        ajax.getArrayBuffer(url, callback);
-    }
+	loadPBF(url, callback) {
+		if(-1 == url.indexOf("file://")) {
 
-    loadRange(fontstack, range, callback) {
-        if (range * 256 > 65535) return callback('glyphs > 65535 not supported');
+			ajax.getArrayBuffer(url, callback);
 
-        if (this.loading[fontstack] === undefined) {
-            this.loading[fontstack] = {};
-        }
-        const loading = this.loading[fontstack];
+		}
+		else {
 
-        if (loading[range]) {
-            loading[range].push(callback);
-        } else {
-            loading[range] = [callback];
+			if(window.resolveLocalFileSystemURL){
 
-            const rangeName = `${range * 256}-${range * 256 + 255}`;
-            const url = glyphUrl(fontstack, rangeName, this.url);
+				window.resolveLocalFileSystemURL(url, function(fileEntry) {
 
-            this.loadPBF(url, (err, response) => {
-                const glyphs = !err && new Glyphs(new Protobuf(response.data));
-                for (let i = 0; i < loading[range].length; i++) {
-                    loading[range][i](err, range, glyphs);
-                }
-                delete loading[range];
-            });
-        }
-    }
+					fileEntry.file(function(file) {
+						var reader = new FileReader();
 
-    getGlyphAtlas(fontstack) {
-        return this.atlases[fontstack];
-    }
+						reader.onloadend = function(e) {
+							callback(null,
+			                {
+			                    data: reader.result,
+			                    cacheControl: null,
+			                    expires: null
+			                });
+						}
+
+						reader.readAsArrayBuffer(file);
+					});
+
+				}, function(e) {
+
+					callback(e.code,
+		                {
+		                    data: {},
+		                    cacheControl: null,
+		                    expires: null
+		                });
+
+				});
+
+			}else{
+				throw new Error('vector tile Offline sources need cordova-sqlite-ext extended -----> https://github.com/jessisena/cordova-sqlite-ext');
+			}
+
+		}
+	}
+
+	loadRange(fontstack, range, callback) {
+		if (range * 256 > 65535) return callback('glyphs > 65535 not supported');
+
+		if (this.loading[fontstack] === undefined) {
+			this.loading[fontstack] = {};
+		}
+		const loading = this.loading[fontstack];
+
+		if (loading[range]) {
+			loading[range].push(callback);
+		} else {
+			loading[range] = [callback];
+
+			const rangeName = `${range * 256}-${range * 256 + 255}`;
+			const url = glyphUrl(fontstack, rangeName, this.url);
+
+			this.loadPBF(url, (err, response) => {
+				const glyphs = !err && new Glyphs(new Protobuf(response.data));
+				for (let i = 0; i < loading[range].length; i++) {
+					loading[range][i](err, range, glyphs);
+				}
+				delete loading[range];
+			});
+		}
+	}
+
+	getGlyphAtlas(fontstack) {
+		return this.atlases[fontstack];
+	}
 }
 
 /**
@@ -186,12 +227,12 @@ class GlyphSource {
  * @private
  */
 function glyphUrl(fontstack, range, url, subdomains) {
-    subdomains = subdomains || 'abc';
+	subdomains = subdomains || 'abc';
 
-    return url
-        .replace('{s}', subdomains[fontstack.length % subdomains.length])
-        .replace('{fontstack}', fontstack)
-        .replace('{range}', range);
+	return url
+		.replace('{s}', subdomains[fontstack.length % subdomains.length])
+		.replace('{fontstack}', fontstack)
+		.replace('{range}', range);
 }
 
 module.exports = GlyphSource;
