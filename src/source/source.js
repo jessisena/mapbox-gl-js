@@ -8,7 +8,6 @@ import type Map from '../ui/map';
 import type Tile from './tile';
 import type TileCoord from './tile_coord';
 
-
 /**
  * The `Source` interface must be implemented by each source type, including "core" types (`vector`, `raster`,
  * `video`, etc.) and all custom, third-party types.

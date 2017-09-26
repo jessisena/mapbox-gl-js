@@ -22,6 +22,7 @@ module.exports = function validateSource(options) {
     case 'vector':
     case 'vectoroffline':
     case 'raster':
+    case 'rasteroffline':
         errors = errors.concat(validateObject({
             key: key,
             value: value,
@@ -78,7 +79,7 @@ module.exports = function validateSource(options) {
         return validateEnum({
             key: `${key}.type`,
             value: value.type,
-            valueSpec: {values: ['vector', 'raster', 'geojson', 'video', 'image', 'canvas']},
+            valueSpec: {values: ['vector', 'vectoroffline', 'raster', 'rasteroffline', 'geojson', 'video', 'image', 'canvas']},
             style: style,
             styleSpec: styleSpec
         });

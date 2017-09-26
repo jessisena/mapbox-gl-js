@@ -19,7 +19,6 @@ class VectorTileOfflineSource extends VectorTileSource {
 
         if(window.sqlitePlugin){
 
-
             this.db = window.sqlitePlugin.openDatabase(
                 JSON.parse(options.tiles[0])
             ,function(){
@@ -27,18 +26,6 @@ class VectorTileOfflineSource extends VectorTileSource {
             },function(){
                 throw new Error('vector tile Offline sources not opened');
             });
-
-            //TODO control que tiles arriba amb el path correctament
-            // this.db = window.sqlitePlugin.openDatabase({
-            //             name: options.tiles[0], //"/storage/emulated/0/.mbtiles",
-            //             location: 2,
-            //             createFromLocation: 2,
-            //             androidDatabaseImplementation: 2
-            //         },function(){
-
-            //         },function(){
-            //             throw new Error('vector tile Offline sources not opened');
-            //         });
 
         }else{
             throw new Error('vector tile Offline sources need cordova-sqlite-ext extended -----> https://github.com/jessisena/cordova-sqlite-ext');
