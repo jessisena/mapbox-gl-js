@@ -27,18 +27,6 @@ class VectorTileOfflineSource extends VectorTileSource {
                 throw new Error('vector tile Offline sources not opened');
             });
 
-            //TODO control que tiles arriba amb el path correctament
-            // this.db = window.sqlitePlugin.openDatabase({
-            //             name: options.tiles[0], //"/storage/emulated/0/.mbtiles",
-            //             location: 2,
-            //             createFromLocation: 2,
-            //             androidDatabaseImplementation: 2
-            //         },function(){
-
-            //         },function(){
-            //             throw new Error('vector tile Offline sources not opened');
-            //         });
-
         }else{
             throw new Error('vector tile Offline sources need cordova-sqlite-ext extended -----> https://github.com/jessisena/cordova-sqlite-ext');
         }
@@ -74,8 +62,9 @@ class VectorTileOfflineSource extends VectorTileSource {
     loadTile(tile, callback) {
 
 
-        const overscaling = tile.coord.z > this.maxzoom ? Math.pow(2, tile.coord.z - this.maxzoom) : 1;        
-        const coordY = Math.pow(2, tile.coord.z) -1 - tile.coord.y;
+        const overscaling = tile.coord.z > this.maxzoom ? Math.pow(2, tile.coord.z - this.maxzoom) : 1;
+        var newZ = ((tile.coord.z < this.maxzoom) ? tile.coord.z : Math.floor(this.maxzoom));
+        const coordY = Math.pow(2, newZ) -1 - tile.coord.y;
 
         const params = {
             //url: normalizeURL(tile.coord.url(this.tiles, this.maxzoom, this.scheme), this.url),
@@ -139,7 +128,7 @@ class VectorTileOfflineSource extends VectorTileSource {
             return callback(err);
         }
 
-        this.readTile(tile.coord.z, tile.coord.x, coordY, this.db).then(
+        this.readTile(newZ, tile.coord.x, coordY, this.db).then(
             readTileSuccess.bind(this), readTileError.bind(this)
         );
     
