@@ -125,6 +125,9 @@
         },
         "raster": {
             "doc": "A raster tile source."
+        },
+        "rasteroffline": {
+            "doc": "A raster tile source."
         }
       },
       "doc": "The data type of the tile source."
@@ -362,6 +365,17 @@
           }
         },
         "raster": {
+          "doc": "Raster map textures such as satellite imagery.",
+          "sdk-support": {
+            "basic functionality": {
+              "js": "0.10.0",
+              "android": "2.0.1",
+              "ios": "2.0.0",
+              "macos": "0.1.0"
+            }
+          }
+        },
+        "rasteroffline": {
           "doc": "Raster map textures such as satellite imagery.",
           "sdk-support": {
             "basic functionality": {

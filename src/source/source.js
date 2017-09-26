@@ -6,6 +6,7 @@ const sourceTypes = {
     'vector': require('../source/vector_tile_source'),
     'vectoroffline': require('../source/vector_tile_offline_source'),
     'raster': require('../source/raster_tile_source'),
+    'rasteroffline': require('../source/raster_tile_offline_source'),
     'geojson': require('../source/geojson_source'),
     'video': require('../source/video_source'),
     'image': require('../source/image_source'),
