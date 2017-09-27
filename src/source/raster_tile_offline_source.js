@@ -151,6 +151,6 @@ class RasterTileSourceOffline extends RasterTileSource {
         });        
 
     }
-
+}
 
 module.exports = RasterTileSourceOffline;
